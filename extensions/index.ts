@@ -138,41 +138,54 @@ async function getLivePort(): Promise<number | undefined> {
 function updateWidget(): void {
   if (!currentCtx) return;
 
-  if (!isConnected) {
-    currentCtx.ui.setWidget("pi-companion", ["vscode: disconnected"]);
-    return;
-  }
-
-  if (!currentContext) {
-    currentCtx.ui.setWidget("pi-companion", ["vscode: connected"]);
-    return;
-  }
-
-  if (!currentContext.workspaceState.openFiles.length) {
-    currentCtx.ui.setWidget("pi-companion", ["vscode: no files"]);
-    return;
-  }
-
-  const { workspaceState } = currentContext;
-  const activeFile = workspaceState.openFiles.find((f) => f.isActive) || workspaceState.openFiles[0];
-  const filenames = workspaceState.openFiles.map((f) => f.path.split("/").pop() || f.path);
-
-  if (activeFile) {
-    const filename = activeFile.path.split("/").pop() || activeFile.path;
-    let location = "";
-    if (activeFile.selectionStart && activeFile.selectionEnd) {
-      const start = activeFile.selectionStart.line;
-      const end = activeFile.selectionEnd.line;
-      location = start === end ? ` L${start}` : ` L${start}:${end}`;
+  try {
+    if (!isConnected) {
+      currentCtx.ui.setWidget("pi-companion", ["vscode: disconnected"]);
+      return;
     }
-    const label = filenames.length === 1
-      ? `${filename}${location}`
-      : `${filename}${location} +${filenames.length - 1}`;
-    currentCtx.ui.setWidget("pi-companion", [label]);
-    return;
-  }
 
-  currentCtx.ui.setWidget("pi-companion", [filenames.join(", ")]);
+    if (!currentContext) {
+      currentCtx.ui.setWidget("pi-companion", ["vscode: connected"]);
+      return;
+    }
+
+    if (!currentContext.workspaceState.openFiles.length) {
+      currentCtx.ui.setWidget("pi-companion", ["vscode: no files"]);
+      return;
+    }
+
+    const { workspaceState } = currentContext;
+    const activeFile = workspaceState.openFiles.find((f) => f.isActive) || workspaceState.openFiles[0];
+    const filenames = workspaceState.openFiles.map((f) => f.path.split("/").pop() || f.path);
+
+    if (activeFile) {
+      const filename = activeFile.path.split("/").pop() || activeFile.path;
+      let location = "";
+      if (activeFile.selectionStart && activeFile.selectionEnd) {
+        const start = activeFile.selectionStart.line;
+        const end = activeFile.selectionEnd.line;
+        location = start === end ? ` L${start}` : ` L${start}:${end}`;
+      }
+      const label = filenames.length === 1
+        ? `${filename}${location}`
+        : `${filename}${location} +${filenames.length - 1}`;
+      currentCtx.ui.setWidget("pi-companion", [label]);
+      return;
+    }
+
+    currentCtx.ui.setWidget("pi-companion", [filenames.join(", ")]);
+  } catch {
+    // ctx became stale after session replacement (/new, fork, etc.).
+    // Disassociate the dead ctx, tear down the old connection,
+    // and schedule a reconnect to pick up the new session's ctx.
+    currentCtx = undefined;
+    if (sseRequest) {
+      sseRequest.destroy();
+      sseRequest = undefined;
+    }
+    isConnected = false;
+    scheduleReconnect();
+  }
 }
 
 async function connectSSE(): Promise<void> {
