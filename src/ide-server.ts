@@ -256,7 +256,7 @@ export class IDEServer {
     (server as any).tool(
       'read_file',
       'Read the contents of a file',
-      { path: { type: 'string', description: 'Absolute path to the file' } },
+      { path: z.string().describe('Absolute path to the file') },
       async (args: { path: string }) => {
         try {
           const content = await fs.promises.readFile(args.path, 'utf-8');
@@ -287,9 +287,9 @@ export class IDEServer {
       'goto',
       'Open a file at a specific location',
       {
-        path: { type: 'string', description: 'Absolute path to the file' },
-        line: { type: 'number', description: 'Line number (1-based)' },
-        character: { type: 'number', description: 'Character position (1-based)' },
+        path: z.string().describe('Absolute path to the file'),
+        line: z.number().optional().describe('Line number (1-based)'),
+        character: z.number().optional().describe('Character position (1-based)'),
       },
       async (args: { path: string; line?: number; character?: number }) => {
         try {
