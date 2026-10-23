@@ -46,6 +46,7 @@ const streamableHttp_js_1 = require("@modelcontextprotocol/sdk/server/streamable
 const crypto_1 = require("crypto");
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
+const zod_1 = require("zod");
 const IDE_SERVER_PORT_ENV_VAR = 'PI_COMPANION_PORT';
 const IDE_WORKSPACE_PATH_ENV_VAR = 'PI_COMPANION_WORKSPACE_PATH';
 const IDE_AUTH_TOKEN_ENV_VAR = 'PI_COMPANION_AUTH_TOKEN';
@@ -250,7 +251,7 @@ class IDEServer {
             };
         });
         // Tool: read_file
-        server.tool('read_file', 'Read the contents of a file', { path: { type: 'string', description: 'Absolute path to the file' } }, async (args) => {
+        server.tool('read_file', 'Read the contents of a file', { path: zod_1.z.string().describe('Absolute path to the file') }, async (args) => {
             try {
                 const content = await fs.promises.readFile(args.path, 'utf-8');
                 return {
@@ -276,9 +277,9 @@ class IDEServer {
         });
         // Tool: goto
         server.tool('goto', 'Open a file at a specific location', {
-            path: { type: 'string', description: 'Absolute path to the file' },
-            line: { type: 'number', description: 'Line number (1-based)' },
-            character: { type: 'number', description: 'Character position (1-based)' },
+            path: zod_1.z.string().describe('Absolute path to the file'),
+            line: zod_1.z.number().optional().describe('Line number (1-based)'),
+            character: zod_1.z.number().optional().describe('Character position (1-based)'),
         }, async (args) => {
             try {
                 const uri = vscode.Uri.file(args.path);
