@@ -277,7 +277,7 @@ export default function (pi: ExtensionAPI) {
     const port = await getLivePort();
     if (port) {
       await connectSSE();
-    } else {
+    } else if (isRunningInVSCode()) {
       ctx.ui.notify("PI Companion: VS Code companion server not running. Run 'PI Companion: Start Server' in VS Code.", "warning");
     }
   });

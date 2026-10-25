@@ -14,6 +14,7 @@ const handlers = {};
 const tools = {};
 const widgets = [];
 const rawWidgets = [];
+const notifications = [];
 const ctx = {
   ui: {
     setWidget: (_key, content) => {
@@ -24,7 +25,7 @@ const ctx = {
       rawWidgets.push(rendered);
       widgets.push(rendered.replace(/<\/?\w+>/g, ""));
     },
-    notify: () => {},
+    notify: (message) => { notifications.push(message); },
   },
 };
 
@@ -93,6 +94,32 @@ before(async () => {
 after(async () => {
   await handlers.session_shutdown();
   fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+async function notificationsWithoutServer(termProgram) {
+  const savedTerm = process.env.TERM_PROGRAM;
+  const savedPath = process.env.PATH;
+  process.env.TERM_PROGRAM = termProgram;
+  process.env.PATH = "";
+  notifications.length = 0;
+  try {
+    await handlers.session_start({}, ctx);
+    return [...notifications];
+  } finally {
+    await handlers.session_shutdown();
+    process.env.TERM_PROGRAM = savedTerm;
+    process.env.PATH = savedPath;
+  }
+}
+
+test("does not warn about the server outside VS Code", async () => {
+  const messages = await notificationsWithoutServer("");
+  assert.ok(!messages.some((m) => m.includes("server not running")));
+});
+
+test("warns about the server inside VS Code", async () => {
+  const messages = await notificationsWithoutServer("vscode");
+  assert.ok(messages.some((m) => m.includes("server not running")));
 });
 
 test("shows disconnected when the server stops", async () => {
