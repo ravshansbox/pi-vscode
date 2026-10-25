@@ -1,7 +1,30 @@
 {
-  "name": "vscode-pi-companion-extension",
-  "version": "0.0.1",
+  "name": "@ravshansbox/pi-vscode",
+  "version": "0.0.0",
+  "description": "VS Code editor context extension for pi",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ravshansbox/vscode-pi-companion.git",
+    "directory": "extensions"
+  },
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "vscode"
+  ],
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "files": [
+    "index.ts"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*",
     "@earendil-works/pi-tui": "*",

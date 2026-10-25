@@ -76,8 +76,14 @@ jobs:
         env:
           VERSION: ${{ needs.release.outputs.version }}
 
-      - name: Publish package
-        run: npm publish
+      - name: Set pi extension version
+        run: npm version "$VERSION" --no-git-tag-version
+        working-directory: extensions
+        env:
+          VERSION: ${{ needs.release.outputs.version }}
+
+      - name: Publish pi extension to npm
+        run: cp README.md LICENSE extensions/ && cd extensions && npm publish
 
       - name: Publish to VS Code Marketplace
         run: npx vsce publish "$VERSION" --pat "$VSCE_TOKEN" --skip-duplicate --no-git-tag-version

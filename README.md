@@ -21,7 +21,7 @@ A VS Code extension that provides real-time IDE context (files, selection) to pi
 ### 1. Install pi Extension
 
 ```bash
-pi install npm:vscode-pi-companion
+pi install npm:@ravshansbox/pi-vscode
 ```
 
 ### 2. Install VS Code Extension
