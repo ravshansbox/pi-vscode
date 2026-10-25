@@ -81,3 +81,22 @@ test("accepts more than one mcp session", async () => {
     await server.stop();
   }
 });
+
+test("reports selection start and end of a multi-line selection", async () => {
+  const uri = vscode.Uri.file("/ws/a.ts");
+  const editor = {
+    document: { uri, getText: () => "text" },
+    selection: new vscode.Selection(new vscode.Position(0, 10), new vscode.Position(2, 2)),
+  };
+  vscode.window.tabGroups.all = [{ tabs: [{ input: new vscode.TabInputText(uri) }] }];
+  const { server, port } = await startServer();
+  try {
+    vscode.events.activeEditor.fire(editor);
+    const state = await (await fetch(`http://127.0.0.1:${port}/context`)).json();
+    const [file] = state.workspaceState.openFiles;
+    assert.deepEqual(file.selectionStart, { line: 1, character: 11 });
+    assert.deepEqual(file.selectionEnd, { line: 3, character: 3 });
+  } finally {
+    await server.stop();
+  }
+});

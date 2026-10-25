@@ -161,10 +161,10 @@ class OpenFilesManager {
         }
         // Update selection boundaries
         if (!editor.selection.isEmpty) {
-            const startLine = Math.min(editor.selection.anchor.line, editor.selection.active.line) + 1;
-            const endLine = Math.max(editor.selection.anchor.line, editor.selection.active.line) + 1;
-            const startChar = Math.min(editor.selection.anchor.character, editor.selection.active.character) + 1;
-            const endChar = Math.max(editor.selection.anchor.character, editor.selection.active.character) + 1;
+            const startLine = editor.selection.start.line + 1;
+            const endLine = editor.selection.end.line + 1;
+            const startChar = editor.selection.start.character + 1;
+            const endChar = editor.selection.end.character + 1;
             file.selectionStart = { line: startLine, character: startChar };
             file.selectionEnd = { line: endLine, character: endChar };
         }
