@@ -138,7 +138,7 @@ async function getLivePort(): Promise<number | undefined> {
 
 function setWidget(text: string): void {
   currentCtx?.ui.setWidget("pi-companion", (_tui, theme) => new Text(theme.fg("dim", text), 0, 0), {
-    placement: "belowEditor",
+    placement: "aboveEditor",
   });
 }
 

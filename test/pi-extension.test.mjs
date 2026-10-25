@@ -239,9 +239,9 @@ test("shows the widget in the statusline colour", async () => {
   assert.equal(rawWidgets[rawWidgets.length - 1], "<dim>a.ts</dim>");
 });
 
-test("shows the widget below the editor", async () => {
+test("shows the widget above the editor", async () => {
   await widgetFor({ path: "/ws/a.ts" });
-  assert.equal(placements[placements.length - 1], "belowEditor");
+  assert.equal(placements[placements.length - 1], "aboveEditor");
 });
 
 test("ignores the last line when the selection ends at its first character", async () => {
