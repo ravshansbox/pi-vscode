@@ -4,6 +4,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import * as http from "node:http";
+import { Text } from "@earendil-works/pi-tui";
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "pi-companion-test-"));
 process.env.TMPDIR = tmp;
@@ -14,7 +15,12 @@ const tools = {};
 const widgets = [];
 const ctx = {
   ui: {
-    setWidget: (_key, lines) => widgets.push(lines.join("\n")),
+    setWidget: (_key, content) => {
+      const component = Array.isArray(content)
+        ? { render: () => content.map((line) => new Text(line, 1, 0).render()[0]) }
+        : content({}, { fg: (_role, text) => text });
+      widgets.push(component.render(80).join("\n"));
+    },
     notify: () => {},
   },
 };
@@ -22,7 +28,7 @@ const ctx = {
 function contextFor(file) {
   return {
     workspaceState: {
-      openFiles: [{ path: file.path, timestamp: 1, isActive: true, content: file.content }],
+      openFiles: [{ timestamp: 1, isActive: true, ...file }],
       isTrusted: true,
       workspacePath: "/ws",
     },
@@ -120,6 +126,24 @@ test("keeps retrying until the server comes back", async () => {
     await handlers.session_shutdown();
     await server.stop();
   }
+});
+
+async function widgetFor(file) {
+  const server = await startServer((res) => {
+    res.write(`data: ${JSON.stringify(contextFor(file))}\n\n`);
+  });
+  try {
+    await handlers.session_start({}, ctx);
+    await waitFor(() => lastWidget()?.includes("a.ts"));
+    return lastWidget();
+  } finally {
+    await handlers.session_shutdown();
+    await server.stop();
+  }
+}
+
+test("shows the widget without leading space", async () => {
+  assert.equal(await widgetFor({ path: "/ws/a.ts" }), "a.ts");
 });
 
 test("keeps multi-byte characters split across chunks", async () => {

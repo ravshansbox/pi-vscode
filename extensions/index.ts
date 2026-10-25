@@ -5,6 +5,7 @@
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { Text } from "@earendil-works/pi-tui";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
@@ -135,21 +136,25 @@ async function getLivePort(): Promise<number | undefined> {
   return (await isPortAlive(info.port)) ? info.port : undefined;
 }
 
+function setWidget(text: string): void {
+  currentCtx?.ui.setWidget("pi-companion", () => new Text(text, 0, 0));
+}
+
 function updateWidget(): void {
   if (!currentCtx) return;
 
   if (!isConnected) {
-    currentCtx.ui.setWidget("pi-companion", ["vscode: disconnected"]);
+    setWidget("vscode: disconnected");
     return;
   }
 
   if (!currentContext) {
-    currentCtx.ui.setWidget("pi-companion", ["vscode: connected"]);
+    setWidget("vscode: connected");
     return;
   }
 
   if (!currentContext.workspaceState.openFiles.length) {
-    currentCtx.ui.setWidget("pi-companion", ["vscode: no files"]);
+    setWidget("vscode: no files");
     return;
   }
 
@@ -168,11 +173,11 @@ function updateWidget(): void {
     const label = filenames.length === 1
       ? `${filename}${location}`
       : `${filename}${location} +${filenames.length - 1}`;
-    currentCtx.ui.setWidget("pi-companion", [label]);
+    setWidget(label);
     return;
   }
 
-  currentCtx.ui.setWidget("pi-companion", [filenames.join(", ")]);
+  setWidget(filenames.join(", "));
 }
 
 async function connectSSE(): Promise<void> {

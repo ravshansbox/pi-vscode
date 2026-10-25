@@ -1,6 +1,7 @@
 import { registerHooks } from "node:module";
 
 const stubs = {
+  "@earendil-works/pi-tui": new URL("./stubs/pi-tui.mjs", import.meta.url).href,
   typebox: new URL("./stubs/typebox.mjs", import.meta.url).href,
   vscode: new URL("./stubs/vscode.cjs", import.meta.url).href,
 };
