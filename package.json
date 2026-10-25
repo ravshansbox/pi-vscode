@@ -49,16 +49,6 @@
     "onStartupFinished"
   ],
   "contributes": {
-    "configuration": {
-      "title": "PI Companion",
-      "properties": {
-        "piCompanion.port": {
-          "type": "number",
-          "default": 8765,
-          "description": "Port for MCP server"
-        }
-      }
-    },
     "commands": [
       {
         "command": "pi-companion.start",
