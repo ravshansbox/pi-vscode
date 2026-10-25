@@ -122,7 +122,7 @@ export class IDEServer {
           }
         };
 
-        await this.mcpServer!.connect(transport);
+        await this.createMcpServer().connect(transport);
       } else {
         res.status(400).json({
           jsonrpc: '2.0',

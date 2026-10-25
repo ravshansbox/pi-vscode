@@ -51,3 +51,33 @@ test("stop resolves while a context stream is open", async () => {
   assert.equal(await Promise.race([stopped, timeout]), "stopped");
   assert.equal(server.isRunning(), false);
 });
+
+async function initialize(port, token) {
+  const res = await fetch(`http://127.0.0.1:${port}/mcp`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "content-type": "application/json",
+      accept: "application/json, text/event-stream",
+    },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+      params: { protocolVersion: "2025-03-26", capabilities: {}, clientInfo: { name: "t", version: "1" } },
+    }),
+  });
+  await res.text();
+  return res.status;
+}
+
+test("accepts more than one mcp session", async () => {
+  const { server, context, port } = await startServer();
+  try {
+    const token = context.env.PI_COMPANION_AUTH_TOKEN;
+    assert.equal(await initialize(port, token), 200);
+    assert.equal(await initialize(port, token), 200);
+  } finally {
+    await server.stop();
+  }
+});

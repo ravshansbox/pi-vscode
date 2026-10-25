@@ -137,7 +137,7 @@ class IDEServer {
                         this.transports.delete(transport.sessionId);
                     }
                 };
-                await this.mcpServer.connect(transport);
+                await this.createMcpServer().connect(transport);
             }
             else {
                 res.status(400).json({
