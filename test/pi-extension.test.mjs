@@ -146,6 +146,33 @@ test("shows the widget without leading space", async () => {
   assert.equal(await widgetFor({ path: "/ws/a.ts" }), "a.ts");
 });
 
+test("ignores the last line when the selection ends at its first character", async () => {
+  const widget = await widgetFor({
+    path: "/ws/a.ts",
+    selectionStart: { line: 9, character: 1 },
+    selectionEnd: { line: 15, character: 1 },
+  });
+  assert.equal(widget, "a.ts L9:14");
+});
+
+test("shows a single line when the selection ends at the start of the next line", async () => {
+  const widget = await widgetFor({
+    path: "/ws/a.ts",
+    selectionStart: { line: 9, character: 1 },
+    selectionEnd: { line: 10, character: 1 },
+  });
+  assert.equal(widget, "a.ts L9");
+});
+
+test("keeps the last line when the selection ends after its first character", async () => {
+  const widget = await widgetFor({
+    path: "/ws/a.ts",
+    selectionStart: { line: 9, character: 1 },
+    selectionEnd: { line: 15, character: 3 },
+  });
+  assert.equal(widget, "a.ts L9:15");
+});
+
 test("keeps multi-byte characters split across chunks", async () => {
   const content = "héllo ✓";
   const server = await startServer(async (res) => {

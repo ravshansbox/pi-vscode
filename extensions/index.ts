@@ -167,7 +167,9 @@ function updateWidget(): void {
     let location = "";
     if (activeFile.selectionStart && activeFile.selectionEnd) {
       const start = activeFile.selectionStart.line;
-      const end = activeFile.selectionEnd.line;
+      const end = activeFile.selectionEnd.character === 1 && activeFile.selectionEnd.line > start
+        ? activeFile.selectionEnd.line - 1
+        : activeFile.selectionEnd.line;
       location = start === end ? ` L${start}` : ` L${start}:${end}`;
     }
     const label = filenames.length === 1
