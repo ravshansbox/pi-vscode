@@ -2,6 +2,7 @@ import { registerHooks } from "node:module";
 
 const stubs = {
   "@sinclair/typebox": new URL("./stubs/typebox.mjs", import.meta.url).href,
+  vscode: new URL("./stubs/vscode.cjs", import.meta.url).href,
 };
 
 registerHooks({

@@ -337,6 +337,7 @@ class IDEServer {
         if (this.httpServer) {
             await new Promise((resolve) => {
                 this.httpServer.close(() => resolve());
+                this.httpServer.closeAllConnections();
             });
             this.httpServer = undefined;
         }
