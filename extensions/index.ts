@@ -4,13 +4,13 @@
  * Connects to the VS Code extension via SSE for real-time context updates.
  */
 
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import * as http from "http";
 import { execSync } from "child_process";
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 
 const CONNECTION_DIR = path.join(os.tmpdir(), "pi-companion");
 const WIDGET_DEBOUNCE_MS = 50;
