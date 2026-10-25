@@ -121,3 +121,23 @@ test("keeps retrying until the server comes back", async () => {
     await server.stop();
   }
 });
+
+test("keeps multi-byte characters split across chunks", async () => {
+  const content = "héllo ✓";
+  const server = await startServer(async (res) => {
+    const bytes = Buffer.from(`data: ${JSON.stringify(contextFor({ path: "/ws/c.ts", content }))}\n\n`);
+    const split = bytes.indexOf(Buffer.from("✓")) + 1;
+    res.write(bytes.subarray(0, split));
+    await new Promise((r) => setTimeout(r, 100));
+    res.write(bytes.subarray(split));
+  });
+  try {
+    await handlers.session_start({}, ctx);
+    await waitFor(() => lastWidget() === "c.ts");
+    const result = await tools.get_current_file.execute();
+    assert.equal(JSON.parse(result.content[0].text).content, content);
+  } finally {
+    await handlers.session_shutdown();
+    await server.stop();
+  }
+});

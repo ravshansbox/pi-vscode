@@ -196,6 +196,7 @@ async function connectSSE(): Promise<void> {
     (res) => {
       isConnected = true;
       updateWidget();
+      res.setEncoding("utf8");
       let buffer = "";
 
       res.on("data", (chunk: string) => {
