@@ -154,7 +154,8 @@ function updateWidget(): void {
   }
 
   if (!currentContext.workspaceState.openFiles.length) {
-    setWidget("vscode: no files");
+    if (isRunningInVSCode()) setWidget("vscode: no files");
+    else currentCtx.ui.setWidget("pi-companion", undefined);
     return;
   }
 

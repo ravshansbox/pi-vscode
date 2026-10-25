@@ -18,6 +18,11 @@ const notifications = [];
 const ctx = {
   ui: {
     setWidget: (_key, content) => {
+      if (content === undefined) {
+        rawWidgets.push("");
+        widgets.push("");
+        return;
+      }
       const component = Array.isArray(content)
         ? { render: () => content.map((line) => new Text(line, 1, 0).render()[0]) }
         : content({}, { fg: (role, text) => `<${role}>${text}</${role}>` });
@@ -120,6 +125,38 @@ test("does not warn about the server outside VS Code", async () => {
 test("warns about the server inside VS Code", async () => {
   const messages = await notificationsWithoutServer("vscode");
   assert.ok(messages.some((m) => m.includes("server not running")));
+});
+
+async function widgetWithoutFiles(termProgram) {
+  const savedTerm = process.env.TERM_PROGRAM;
+  process.env.TERM_PROGRAM = termProgram;
+  const server = await startServer((res) => {
+    res.write(`data: ${JSON.stringify({ workspaceState: { openFiles: [], isTrusted: true, workspacePath: "/ws" } })}\n\n`);
+  });
+  try {
+    widgets.length = 0;
+    await handlers.session_start({}, ctx);
+    await waitFor(() => ["", "vscode: no files"].includes(lastWidget()));
+    return lastWidget();
+  } finally {
+    await handlers.session_shutdown();
+    await server.stop();
+    process.env.TERM_PROGRAM = savedTerm;
+  }
+}
+
+test("hides the widget without files outside VS Code", async () => {
+  assert.equal(await widgetWithoutFiles(""), "");
+});
+
+test("shows no files inside VS Code", async () => {
+  const savedPath = process.env.PATH;
+  process.env.PATH = "";
+  try {
+    assert.equal(await widgetWithoutFiles("vscode"), "vscode: no files");
+  } finally {
+    process.env.PATH = savedPath;
+  }
 });
 
 test("shows disconnected when the server stops", async () => {
