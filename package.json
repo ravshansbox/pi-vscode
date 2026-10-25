@@ -20,7 +20,8 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "package": "vsce package",
-    "vscode:prepublish": "npm run compile"
+    "vscode:prepublish": "npm run compile",
+    "test": "node --import ./test/setup.mjs --test test/*.test.mjs"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

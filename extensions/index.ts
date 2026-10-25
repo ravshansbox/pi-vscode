@@ -222,6 +222,8 @@ async function connectSSE(): Promise<void> {
 }
 
 function scheduleReconnect(): void {
+  isConnected = false;
+  updateWidget();
   if (reconnectTimer || !currentCtx) return;
   reconnectTimer = setTimeout(() => {
     reconnectTimer = undefined;

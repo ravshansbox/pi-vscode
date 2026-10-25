@@ -1,0 +1,100 @@
+import { test, before, after } from "node:test";
+import assert from "node:assert/strict";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+import * as http from "node:http";
+
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "pi-companion-test-"));
+process.env.TMPDIR = tmp;
+const connectionDir = path.join(tmp, "pi-companion");
+
+const handlers = {};
+const tools = {};
+const widgets = [];
+const ctx = {
+  ui: {
+    setWidget: (_key, lines) => widgets.push(lines.join("\n")),
+    notify: () => {},
+  },
+};
+
+function contextFor(file) {
+  return {
+    workspaceState: {
+      openFiles: [{ path: file.path, timestamp: 1, isActive: true, content: file.content }],
+      isTrusted: true,
+      workspacePath: "/ws",
+    },
+  };
+}
+
+function startServer(onStream) {
+  const sockets = new Set();
+  const server = http.createServer((req, res) => {
+    if (req.url === "/context") {
+      res.setHeader("Content-Type", "application/json");
+      res.end("{}");
+      return;
+    }
+    res.writeHead(200, { "Content-Type": "text/event-stream" });
+    res.flushHeaders();
+    onStream(res);
+  });
+  server.on("connection", (s) => {
+    sockets.add(s);
+    s.on("close", () => sockets.delete(s));
+  });
+  return new Promise((resolve) => {
+    server.listen(0, "127.0.0.1", () => {
+      fs.mkdirSync(connectionDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(connectionDir, "connection-1.json"),
+        JSON.stringify({ port: server.address().port, workspacePath: "/ws", authToken: "t" }),
+      );
+      resolve({
+        stop: () => new Promise((r) => {
+          for (const s of sockets) s.destroy();
+          server.close(() => r());
+        }),
+      });
+    });
+  });
+}
+
+async function waitFor(predicate, timeoutMs = 8000) {
+  const start = Date.now();
+  while (!predicate()) {
+    if (Date.now() - start > timeoutMs) throw new Error("timed out");
+    await new Promise((r) => setTimeout(r, 20));
+  }
+}
+
+const lastWidget = () => widgets[widgets.length - 1];
+
+before(async () => {
+  process.env.TERM_PROGRAM = "";
+  const mod = await import("../extensions/index.ts");
+  mod.default({
+    on: (name, fn) => { handlers[name] = fn; },
+    registerTool: (tool) => { tools[tool.name] = tool; },
+  });
+});
+
+after(async () => {
+  await handlers.session_shutdown();
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test("shows disconnected when the server stops", async () => {
+  const server = await startServer((res) => {
+    res.write(`data: ${JSON.stringify(contextFor({ path: "/ws/a.ts" }))}\n\n`);
+  });
+  await handlers.session_start({}, ctx);
+  await waitFor(() => lastWidget() === "a.ts");
+
+  await server.stop();
+  fs.rmSync(connectionDir, { recursive: true, force: true });
+  await waitFor(() => lastWidget() === "vscode: disconnected");
+  await handlers.session_shutdown();
+});

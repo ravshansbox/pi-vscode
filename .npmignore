@@ -7,3 +7,4 @@ screenshot.png
 tsconfig.json
 .envrc
 hooks/
+test/
