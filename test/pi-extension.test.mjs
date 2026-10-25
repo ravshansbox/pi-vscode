@@ -13,13 +13,16 @@ const connectionDir = path.join(tmp, "pi-companion");
 const handlers = {};
 const tools = {};
 const widgets = [];
+const rawWidgets = [];
 const ctx = {
   ui: {
     setWidget: (_key, content) => {
       const component = Array.isArray(content)
         ? { render: () => content.map((line) => new Text(line, 1, 0).render()[0]) }
-        : content({}, { fg: (_role, text) => text });
-      widgets.push(component.render(80).join("\n"));
+        : content({}, { fg: (role, text) => `<${role}>${text}</${role}>` });
+      const rendered = component.render(80).join("\n");
+      rawWidgets.push(rendered);
+      widgets.push(rendered.replace(/<\/?\w+>/g, ""));
     },
     notify: () => {},
   },
@@ -144,6 +147,11 @@ async function widgetFor(file) {
 
 test("shows the widget without leading space", async () => {
   assert.equal(await widgetFor({ path: "/ws/a.ts" }), "a.ts");
+});
+
+test("shows the widget in the statusline colour", async () => {
+  await widgetFor({ path: "/ws/a.ts" });
+  assert.equal(rawWidgets[rawWidgets.length - 1], "<dim>a.ts</dim>");
 });
 
 test("ignores the last line when the selection ends at its first character", async () => {
