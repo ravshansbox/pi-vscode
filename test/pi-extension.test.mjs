@@ -15,9 +15,10 @@ const tools = {};
 const widgets = [];
 const rawWidgets = [];
 const notifications = [];
+const placements = [];
 const ctx = {
   ui: {
-    setWidget: (_key, content) => {
+    setWidget: (_key, content, options) => {
       if (content === undefined) {
         rawWidgets.push("");
         widgets.push("");
@@ -28,6 +29,7 @@ const ctx = {
         : content({}, { fg: (role, text) => `<${role}>${text}</${role}>` });
       const rendered = component.render(80).join("\n");
       rawWidgets.push(rendered);
+      placements.push(options?.placement);
       widgets.push(rendered.replace(/<\/?\w+>/g, ""));
     },
     notify: (message) => { notifications.push(message); },
@@ -235,6 +237,11 @@ test("shows the widget without leading space", async () => {
 test("shows the widget in the statusline colour", async () => {
   await widgetFor({ path: "/ws/a.ts" });
   assert.equal(rawWidgets[rawWidgets.length - 1], "<dim>a.ts</dim>");
+});
+
+test("shows the widget below the editor", async () => {
+  await widgetFor({ path: "/ws/a.ts" });
+  assert.equal(placements[placements.length - 1], "belowEditor");
 });
 
 test("ignores the last line when the selection ends at its first character", async () => {

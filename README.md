@@ -55,7 +55,7 @@ filename L9:14        # multi-line selection
 filename L9:14 +2     # 2 more files open
 ```
 
-Status lines such as `vscode: disconnected` only show when pi runs in a VS Code terminal.
+The widget shows below the editor. Status lines such as `vscode: disconnected` only show when pi runs in a VS Code terminal.
 
 ## VS Code Commands
 
