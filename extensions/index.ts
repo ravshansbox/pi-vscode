@@ -140,22 +140,26 @@ function setWidget(text: string): void {
   currentCtx?.ui.setWidget("pi-companion", (_tui, theme) => new Text(theme.fg("dim", text), 0, 0));
 }
 
+function setStatusWidget(text: string): void {
+  if (isRunningInVSCode()) setWidget(text);
+  else currentCtx?.ui.setWidget("pi-companion", undefined);
+}
+
 function updateWidget(): void {
   if (!currentCtx) return;
 
   if (!isConnected) {
-    setWidget("vscode: disconnected");
+    setStatusWidget("vscode: disconnected");
     return;
   }
 
   if (!currentContext) {
-    setWidget("vscode: connected");
+    setStatusWidget("vscode: connected");
     return;
   }
 
   if (!currentContext.workspaceState.openFiles.length) {
-    if (isRunningInVSCode()) setWidget("vscode: no files");
-    else currentCtx.ui.setWidget("pi-companion", undefined);
+    setStatusWidget("vscode: no files");
     return;
   }
 

@@ -127,22 +127,34 @@ test("warns about the server inside VS Code", async () => {
   assert.ok(messages.some((m) => m.includes("server not running")));
 });
 
-async function widgetWithoutFiles(termProgram) {
+async function inTerminal(termProgram, fn) {
   const savedTerm = process.env.TERM_PROGRAM;
+  const savedPath = process.env.PATH;
   process.env.TERM_PROGRAM = termProgram;
-  const server = await startServer((res) => {
-    res.write(`data: ${JSON.stringify({ workspaceState: { openFiles: [], isTrusted: true, workspacePath: "/ws" } })}\n\n`);
-  });
+  if (termProgram === "vscode") process.env.PATH = "";
   try {
-    widgets.length = 0;
-    await handlers.session_start({}, ctx);
-    await waitFor(() => ["", "vscode: no files"].includes(lastWidget()));
-    return lastWidget();
+    return await fn();
   } finally {
-    await handlers.session_shutdown();
-    await server.stop();
     process.env.TERM_PROGRAM = savedTerm;
+    process.env.PATH = savedPath;
   }
+}
+
+async function widgetWithoutFiles(termProgram) {
+  return inTerminal(termProgram, async () => {
+    const server = await startServer((res) => {
+      res.write(`data: ${JSON.stringify({ workspaceState: { openFiles: [], isTrusted: true, workspacePath: "/ws" } })}\n\n`);
+    });
+    try {
+      widgets.length = 0;
+      await handlers.session_start({}, ctx);
+      await waitFor(() => ["", "vscode: no files"].includes(lastWidget()));
+      return lastWidget();
+    } finally {
+      await handlers.session_shutdown();
+      await server.stop();
+    }
+  });
 }
 
 test("hides the widget without files outside VS Code", async () => {
@@ -150,26 +162,33 @@ test("hides the widget without files outside VS Code", async () => {
 });
 
 test("shows no files inside VS Code", async () => {
-  const savedPath = process.env.PATH;
-  process.env.PATH = "";
-  try {
-    assert.equal(await widgetWithoutFiles("vscode"), "vscode: no files");
-  } finally {
-    process.env.PATH = savedPath;
-  }
+  assert.equal(await widgetWithoutFiles("vscode"), "vscode: no files");
 });
 
-test("shows disconnected when the server stops", async () => {
-  const server = await startServer((res) => {
-    res.write(`data: ${JSON.stringify(contextFor({ path: "/ws/a.ts" }))}\n\n`);
+async function widgetAfterServerStops(termProgram) {
+  return inTerminal(termProgram, async () => {
+    const server = await startServer((res) => {
+      res.write(`data: ${JSON.stringify(contextFor({ path: "/ws/a.ts" }))}\n\n`);
+    });
+    try {
+      await handlers.session_start({}, ctx);
+      await waitFor(() => lastWidget() === "a.ts");
+      await server.stop();
+      fs.rmSync(connectionDir, { recursive: true, force: true });
+      await waitFor(() => ["", "vscode: disconnected"].includes(lastWidget()));
+      return lastWidget();
+    } finally {
+      await handlers.session_shutdown();
+    }
   });
-  await handlers.session_start({}, ctx);
-  await waitFor(() => lastWidget() === "a.ts");
+}
 
-  await server.stop();
-  fs.rmSync(connectionDir, { recursive: true, force: true });
-  await waitFor(() => lastWidget() === "vscode: disconnected");
-  await handlers.session_shutdown();
+test("hides the widget when the server stops outside VS Code", async () => {
+  assert.equal(await widgetAfterServerStops(""), "");
+});
+
+test("shows disconnected when the server stops inside VS Code", async () => {
+  assert.equal(await widgetAfterServerStops("vscode"), "vscode: disconnected");
 });
 
 test("keeps retrying until the server comes back", async () => {
@@ -181,7 +200,7 @@ test("keeps retrying until the server comes back", async () => {
 
   await server.stop();
   fs.rmSync(connectionDir, { recursive: true, force: true });
-  await waitFor(() => lastWidget() === "vscode: disconnected");
+  await waitFor(() => lastWidget() === "");
   await new Promise((r) => setTimeout(r, 2500));
 
   server = await startServer((res) => {
