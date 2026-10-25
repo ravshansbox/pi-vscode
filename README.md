@@ -6,14 +6,14 @@ A VS Code extension that provides real-time IDE context (files, selection) to pi
 
 - **Real-time context**: Monitors open files, cursor position, and selection
 - **Instant updates**: Pushes context changes via SSE
-- **Seamless integration**: Selected lines injected into LLM context automatically
+- **Seamless integration**: Injects the current selection, or the active file (first 100 lines) if nothing is selected, into the LLM context
 - **Widget display**: Shows current file/selection in pi UI
 
 ## Architecture
 
 **VS Code Extension** → SSE ← **pi Extension**
 
-- **VS Code**: Context tracking, SSE server
+- **VS Code**: Context tracking, SSE server, MCP server
 - **pi**: SSE client, Widget, Context injection
 
 ## Installation
@@ -21,25 +21,17 @@ A VS Code extension that provides real-time IDE context (files, selection) to pi
 ### 1. Install pi Extension
 
 ```bash
-pi install git:github.com/ravshansbox/vscode-pi-companion
-```
-
-Or manually:
-```bash
-mkdir -p ~/.pi/agent/extensions/vscode-pi-companion
-git clone git@github.com:ravshansbox/vscode-pi-companion.git ~/.pi/agent/extensions/vscode-pi-companion
-cd ~/.pi/agent/extensions/vscode-pi-companion
-npm install
+pi install npm:vscode-pi-companion
 ```
 
 ### 2. Install VS Code Extension
 
 The pi extension will auto-install the VS Code extension when you run `pi` in a VS Code terminal.
 
-Alternatively, install manually:
+Alternatively, install it from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=ravshansbox.vscode-pi-companion) or run:
+
 ```bash
-# Download the .vsix from releases
-code --install-extension vscode-pi-companion.vsix
+code --install-extension ravshansbox.vscode-pi-companion
 ```
 
 Then reload VS Code window.
@@ -51,17 +43,25 @@ Then reload VS Code window.
 3. Run `pi`
 4. The extension auto-connects and shows current file in widget
 5. Select code → widget updates instantly
-6. Selected lines are injected into LLM context automatically
+6. The selection (or the active file) is injected into LLM context automatically
 
 ## Widget Display
 
 ```
-📄 filename           # no selection
-📄 filename L9        # single line
-📄 filename L9:14     # multi-line selection
+vscode: disconnected  # VS Code extension not reachable
+filename              # no selection
+filename L9           # single line
+filename L9:14        # multi-line selection
+filename L9:14 +2     # 2 more files open
 ```
 
-## MCP Tools (for LLM)
+## VS Code Commands
+
+- `PI Companion: Start Server`
+- `PI Companion: Stop Server`
+- `PI Companion: Show Status`
+
+## pi Tools (for LLM)
 
 | Tool | Description |
 |------|-------------|
@@ -69,15 +69,25 @@ Then reload VS Code window.
 | `get_current_file` | Current file with selection |
 | `list_open_files` | List all open files |
 
+## MCP Server (for other agents)
+
+The VS Code extension serves MCP at `http://127.0.0.1:$PI_COMPANION_PORT/mcp`. Send `Authorization: Bearer $PI_COMPANION_AUTH_TOKEN`. Both variables are set in VS Code terminals.
+
+| Tool | Description |
+|------|-------------|
+| `get_open_files` | Open files with content, cursor and selection |
+| `read_file` | Read a file by absolute path |
+| `goto` | Open a file at a line and character |
+
 ## Development
 
 ```bash
-# Build VS Code extension
 npm install
 npm run compile
+npm test
 
 # Package as .vsix
-npx vsce package
+npm run package
 ```
 
 Press F5 to run in Extension Development Host.
