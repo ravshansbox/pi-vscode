@@ -98,3 +98,26 @@ test("shows disconnected when the server stops", async () => {
   await waitFor(() => lastWidget() === "vscode: disconnected");
   await handlers.session_shutdown();
 });
+
+test("keeps retrying until the server comes back", async () => {
+  let server = await startServer((res) => {
+    res.write(`data: ${JSON.stringify(contextFor({ path: "/ws/a.ts" }))}\n\n`);
+  });
+  await handlers.session_start({}, ctx);
+  await waitFor(() => lastWidget() === "a.ts");
+
+  await server.stop();
+  fs.rmSync(connectionDir, { recursive: true, force: true });
+  await waitFor(() => lastWidget() === "vscode: disconnected");
+  await new Promise((r) => setTimeout(r, 2500));
+
+  server = await startServer((res) => {
+    res.write(`data: ${JSON.stringify(contextFor({ path: "/ws/b.ts" }))}\n\n`);
+  });
+  try {
+    await waitFor(() => lastWidget() === "b.ts");
+  } finally {
+    await handlers.session_shutdown();
+    await server.stop();
+  }
+});

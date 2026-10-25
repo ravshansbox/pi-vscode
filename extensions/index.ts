@@ -177,7 +177,10 @@ function updateWidget(): void {
 
 async function connectSSE(): Promise<void> {
   const port = await getLivePort();
-  if (!port) return;
+  if (!port) {
+    scheduleReconnect();
+    return;
+  }
 
   if (sseRequest) {
     sseRequest.destroy();
