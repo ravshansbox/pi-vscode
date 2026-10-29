@@ -100,3 +100,14 @@ test("reports selection start and end of a multi-line selection", async () => {
     await server.stop();
   }
 });
+
+test("does not let web pages read the context across origins", async () => {
+  const { server, port } = await startServer();
+  try {
+    const res = await fetch(`http://127.0.0.1:${port}/context`, { headers: { origin: "https://evil.example" } });
+    await res.text();
+    assert.equal(res.headers.get("access-control-allow-origin"), null);
+  } finally {
+    await server.stop();
+  }
+});

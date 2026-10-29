@@ -6,7 +6,6 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { randomUUID } from 'crypto';
 import express, { Request, Response, NextFunction } from 'express';
-import cors from 'cors';
 import { z } from 'zod';
 
 const IDE_SERVER_PORT_ENV_VAR = 'PI_COMPANION_PORT';
@@ -52,7 +51,6 @@ export class IDEServer {
     // Create Express app
     const app = express();
     app.use(express.json({ limit: '10mb' }));
-    app.use(cors());
 
     // Context endpoints (no auth required)
     app.get('/context', (_req, res) => {
