@@ -111,3 +111,12 @@ test("does not let web pages read the context across origins", async () => {
     await server.stop();
   }
 });
+
+test("stop removes the editor listeners added by start", async () => {
+  const before = vscode.events.selection.listeners.size;
+  const { server, context } = await startServer();
+  await server.stop();
+  await server.start(context);
+  await server.stop();
+  assert.equal(vscode.events.selection.listeners.size, before);
+});

@@ -362,6 +362,8 @@ export class IDEServer {
       this.httpServer = undefined;
     }
 
+    this.openFilesManager?.dispose();
+
     if (this.context) {
       this.context.environmentVariableCollection.clear();
     }

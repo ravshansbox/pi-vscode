@@ -40,6 +40,7 @@ export class OpenFilesManager {
   readonly onDidChange = this.onDidChangeEmitter.event;
   private debounceTimer: NodeJS.Timeout | undefined;
   private openFiles: File[] = [];
+  private readonly watchers: vscode.Disposable[] = [];
 
   constructor(private readonly context: vscode.ExtensionContext) {
     // Watch for active editor changes
@@ -101,7 +102,7 @@ export class OpenFilesManager {
       }
     });
 
-    context.subscriptions.push(
+    this.watchers.push(
       editorWatcher,
       selectionWatcher,
       closeWatcher,
@@ -109,6 +110,7 @@ export class OpenFilesManager {
       renameWatcher,
       saveWatcher,
     );
+    context.subscriptions.push(...this.watchers);
 
     // Add current active file on startup
     if (
@@ -208,6 +210,15 @@ export class OpenFilesManager {
 
     // Update content
     file.content = editor.document.getText();
+  }
+
+  dispose() {
+    for (const watcher of this.watchers) {
+      watcher.dispose();
+    }
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+    }
   }
 
   private fireWithDebounce() {
