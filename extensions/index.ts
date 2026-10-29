@@ -131,6 +131,8 @@ function isPortAlive(port: number): Promise<boolean> {
 }
 
 async function getLivePort(): Promise<number | undefined> {
+  const envPort = Number(process.env.PI_COMPANION_PORT);
+  if (envPort > 0 && (await isPortAlive(envPort))) return envPort;
   const info = readLatestConnectionInfo();
   if (!info) return undefined;
   return (await isPortAlive(info.port)) ? info.port : undefined;

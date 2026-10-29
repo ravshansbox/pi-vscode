@@ -46,7 +46,7 @@ function contextFor(file) {
   };
 }
 
-function startServer(onStream) {
+function startServer(onStream, connectionFile = "connection-1.json") {
   const sockets = new Set();
   const server = http.createServer((req, res) => {
     if (req.url === "/context") {
@@ -66,7 +66,7 @@ function startServer(onStream) {
     server.listen(0, "127.0.0.1", () => {
       fs.mkdirSync(connectionDir, { recursive: true });
       fs.writeFileSync(
-        path.join(connectionDir, "connection-1.json"),
+        path.join(connectionDir, connectionFile),
         JSON.stringify({ port: server.address().port, workspacePath: "/ws", authToken: "t" }),
       );
       resolve({
@@ -288,5 +288,29 @@ test("keeps multi-byte characters split across chunks", async () => {
   } finally {
     await handlers.session_shutdown();
     await server.stop();
+  }
+});
+
+test("connects to the server of its own VS Code window", async () => {
+  const own = await startServer((res) => {
+    res.write(`data: ${JSON.stringify(contextFor({ path: "/ws/own.ts" }))}\n\n`);
+  }, "connection-1.json");
+  const ownPort = JSON.parse(fs.readFileSync(path.join(connectionDir, "connection-1.json"), "utf8")).port;
+  const other = await startServer((res) => {
+    res.write(`data: ${JSON.stringify(contextFor({ path: "/ws/other.ts" }))}\n\n`);
+  }, "connection-2.json");
+  const later = new Date(Date.now() + 60_000);
+  fs.utimesSync(path.join(connectionDir, "connection-2.json"), later, later);
+  process.env.PI_COMPANION_PORT = String(ownPort);
+  try {
+    await handlers.session_start({}, ctx);
+    await waitFor(() => ["own.ts", "other.ts"].includes(lastWidget()));
+    assert.equal(lastWidget(), "own.ts");
+  } finally {
+    delete process.env.PI_COMPANION_PORT;
+    await handlers.session_shutdown();
+    await own.stop();
+    await other.stop();
+    fs.rmSync(connectionDir, { recursive: true, force: true });
   }
 });
