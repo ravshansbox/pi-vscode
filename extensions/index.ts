@@ -193,6 +193,7 @@ function updateWidget(): void {
 
 async function connectSSE(): Promise<void> {
   const port = await getLivePort();
+  if (!currentCtx) return;
   if (!port) {
     scheduleReconnect();
     return;

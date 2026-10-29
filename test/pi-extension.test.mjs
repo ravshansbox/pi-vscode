@@ -314,3 +314,21 @@ test("connects to the server of its own VS Code window", async () => {
     fs.rmSync(connectionDir, { recursive: true, force: true });
   }
 });
+
+test("does not connect after shutdown during start", async () => {
+  let openStreams = 0;
+  const server = await startServer((res) => {
+    openStreams++;
+    res.on("close", () => openStreams--);
+  });
+  try {
+    const starting = handlers.session_start({}, ctx);
+    await handlers.session_shutdown();
+    await starting;
+    await new Promise((r) => setTimeout(r, 300));
+    assert.equal(openStreams, 0);
+  } finally {
+    await server.stop();
+    fs.rmSync(connectionDir, { recursive: true, force: true });
+  }
+});
